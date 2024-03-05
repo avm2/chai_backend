@@ -51,32 +51,46 @@ const userSchema= new Schema(
     },{timestamps: true}
 )
 
+// Execute this function before saving a user instance
 userSchema.pre("save", async function (next) {
-    if(! this.isModified("password")){
+    // Check if the password field is not modified
+    if (!this.isModified("password")) {
+        // If password is not modified, proceed to the next middleware
         return next();
     }
-    this.password=bcrypt.hash(this.password,10)
-    next()
+
+    // Hash the password asynchronously using bcrypt with a cost factor of 10
+    this.password = await bcrypt.hash(this.password, 10);
+
+    // Proceed to the next middleware
+    next();
 });
+
 
 userSchema.methods.isPasswordCorrect = async function (password){
   return  await  bcrypt.compare(password, this.password)
 }
 
-userSchema.methods.generateAccessToken= function (){
-  return  Jwt.sign(
+// Define a method called generateAccessToken for the user schema
+userSchema.methods.generateAccessToken = function () {
+    // Generate a JSON Web Token (JWT) containing user information
+    return Jwt.sign(
+        // Payload of the JWT containing user information
         {
-            _id: this._id,
-            email: this.email,
-            username: this.username,
-            fullName: this.fullName
+            _id: this._id, // User's ID
+            email: this.email, // User's email
+            username: this.username, // User's username
+            fullName: this.fullName // User's full name
         },
+        // Secret key used to sign the JWT, retrieved from environment variables
         process.env.ACCESS_TOKEN_SECRET,
         {
-            expiresIn:process.env.ACCESS_TOKEN_EXPIRY
+            // Additional options for the JWT, such as expiration time
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY // Expiration time for the token
         }
-    )
+    );
 }
+
 userSchema.methods.generateRefreshToken= function (){
     return  Jwt.sign(
         {
